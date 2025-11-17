@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulador de Corrida - T1</title>
+  <style>
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      background-color: #000; 
+      font-family: Arial, sans-serif;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    #instructions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    #instructions h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    Velocidade: 0 km/h<br>
+    Câmera: Aérea
+  </div>
+  
+  <div id="instructions">
+    <h3>Controles</h3>
+    ↑ / W - Acelerar<br>
+    ↓ / S - Freiar/Ré<br>
+    ← / A - Esquerda<br>
+    → / D - Direita<br>
+    C - Trocar câmera
+  </div>
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  
+  <script type="module" src="main.js"></script>
+</body>
+</html>
