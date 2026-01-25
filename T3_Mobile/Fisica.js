@@ -37,8 +37,7 @@ let vencedor = null;
 
 // Configurar listeners de teclado e Joystick (Mobile)
 export function inicializarControles() {
-    // === JOYSTICK MOBILE ===
-    // Verifica se a biblioteca nipplejs foi carregada (apenas no mobile/HTML que tem o script)
+    // === JOYSTICK MOBILE (DIREÇÃO APENAS) ===
     if (typeof nipplejs !== 'undefined') {
         const zone = document.getElementById('joystickWrapper1');
         if (zone) {
@@ -47,28 +46,44 @@ export function inicializarControles() {
                 mode: 'static',
                 position: { left: '80px', bottom: '80px' },
                 color: 'white',
-                size: 150
+                size: 150,
+                lockX: true // Apenas esquerda/direita
             });
             
             joystick.on('move', (evt, data) => {
                  const dx = data.vector.x;
-                 const dy = data.vector.y;
-                 
-                 // Limiares para ativar (Deadzone)
+                 // Apenas atualiza direção
                  teclas.direita = dx > 0.3;
                  teclas.esquerda = dx < -0.3;
-                 teclas.frente = dy > 0.3;
-                 teclas.tras = dy < -0.3;
             });
             
             joystick.on('end', () => {
-                teclas.frente = false;
-                teclas.tras = false;
                 teclas.esquerda = false;
                 teclas.direita = false;
             });
         }
     }
+    
+    // === BOTÕES MOBILE (GAS/BRAKE) === (Se existirem no DOM)
+    const btnGas = document.getElementById('btn-gas');
+    const btnBrake = document.getElementById('btn-brake');
+    
+    // Helper para touch
+    function addTouchBtn(elem, keyName) {
+        if(!elem) return;
+        
+        // Touch events
+        elem.addEventListener('touchstart', (e) => { e.preventDefault(); teclas[keyName] = true; });
+        elem.addEventListener('touchend', (e) => { e.preventDefault(); teclas[keyName] = false; });
+        
+        // Mouse events (para teste no PC)
+        elem.addEventListener('mousedown', (e) => { teclas[keyName] = true; });
+        elem.addEventListener('mouseup', (e) => { teclas[keyName] = false; });
+        elem.addEventListener('mouseleave', (e) => { teclas[keyName] = false; });
+    }
+    
+    addTouchBtn(btnGas, 'frente');
+    addTouchBtn(btnBrake, 'tras');
 
     window.addEventListener('keydown', (e) => {
         switch(e.key.toLowerCase()) {

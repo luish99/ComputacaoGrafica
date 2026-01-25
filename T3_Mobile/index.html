@@ -13,13 +13,138 @@
     #joystickWrapper1 {
       pointer-events: auto;
       position: absolute;       
-      bottom: 50px;
-      left: 50px;
+      bottom: 20px;
+      left: 20px;
       display: block; 
       touch-action: manipulation;
-      z-index: 20; /* Above info but below loading if loading covers it? Loading is z-100 */
+      z-index: 20; 
     }
-    #info {
+
+    /* Left Controls (Tracks) */
+    #left-controls-top {
+        position: absolute;
+        bottom: 180px; /* Above Joystick */
+        left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 20;
+    }
+    
+    /* Right Controls (Action) */
+    #right-controls {
+        position: absolute;
+        bottom: 30px;
+        right: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 20px;
+        z-index: 20;
+    }
+    
+    .hud-row {
+        display: flex;
+        gap: 20px;
+    }
+
+    .hud-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        font-weight: bold;
+        font-size: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        user-select: none;
+        touch-action: manipulation;
+        cursor: pointer;
+        transition: transform 0.1s, background-color 0.1s;
+    }
+    
+    .hud-btn:active {
+        background-color: rgba(255, 255, 255, 0.3);
+        transform: scale(0.95);
+    }
+    
+    .track-btn {
+        width: 50px;
+        height: 50px;
+        background-color: rgba(0, 100, 255, 0.5);
+        font-size: 18px;
+    }
+    
+    .gas-btn {
+        width: 80px;
+        height: 80px;
+        background-color: rgba(0, 255, 0, 0.4);
+        font-size: 14px;
+    }
+    
+    .brake-btn {
+        width: 60px;
+        height: 60px;
+        background-color: rgba(255, 0, 0, 0.4);
+        font-size: 12px;
+    }
+    
+    .shoot-btn {
+        width: 70px;
+        height: 70px;
+        background-color: rgba(255, 165, 0, 0.5);
+        border-radius: 15px; /* Square-ish */
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    /* Hide Desktop Instructions */
+    #instructions { display: none !important; }
+
+  </style>
+</head>
+<body>
+  
+  <div id="loading-screen">
+      <div id="loading-container">
+          <h1>Simulador T3 Mobile</h1>
+          <div id="progress-container">
+              <div id="progress-bar"></div>
+          </div>
+          <div id="loading-text">Carregando assets...</div>
+          <button id="start-button">START ENGINE</button>
+      </div>
+  </div>
+  
+  <!-- UI Mobile -->
+  
+  <!-- Left: Joystick (NippleJS container) + Track Buttons -->
+  <div id="joystickWrapper1"></div>
+  
+  <div id="left-controls-top">
+      <div class="hud-btn track-btn" id="btn-t1">1</div>
+      <div class="hud-btn track-btn" id="btn-t2">2</div>
+      <div class="hud-btn track-btn" id="btn-t3">3</div>
+  </div>
+
+  <!-- Right: Actions -->
+  <div id="right-controls">
+      <!-- Top Row: Shoot -->
+      <div class="hud-btn shoot-btn" id="btn-shoot">🔥</div>
+      
+      <!-- Bottom Row: Pedals -->
+      <div class="hud-row">
+          <div class="hud-btn brake-btn" id="btn-brake">RÉ</div>
+          <div class="hud-btn gas-btn" id="btn-gas">GAS</div>
+      </div>
+  </div>
+
+  <script src="../libs/other/nipplejs.js"></script>
+
+  <div id="info">
       position: absolute;
       top: 10px;
       left: 10px;
@@ -154,6 +279,25 @@
   </div>
   
   <div id="joystickWrapper1"></div>
+  
+  <div id="left-controls-top">
+      <div class="hud-btn track-btn" id="btn-t1">1</div>
+      <div class="hud-btn track-btn" id="btn-t2">2</div>
+      <div class="hud-btn track-btn" id="btn-t3">3</div>
+  </div>
+
+  <!-- Right: Actions -->
+  <div id="right-controls">
+      <!-- Top Row: Shoot -->
+      <div class="hud-btn shoot-btn" id="btn-shoot">🔥</div>
+      
+      <!-- Bottom Row: Pedals -->
+      <div class="hud-row">
+          <div class="hud-btn brake-btn" id="btn-brake">RÉ</div>
+          <div class="hud-btn gas-btn" id="btn-gas">GAS</div>
+      </div>
+  </div>
+
   <script src="../libs/other/nipplejs.js"></script>
 
   <div id="info">

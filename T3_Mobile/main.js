@@ -449,6 +449,21 @@ function principal() {
         }
     });
     
+    // === LISTENERS DOS BOTÕES MOBILE (TRACKS & SHOOT) ===
+    const btnT1 = document.getElementById('btn-t1');
+    const btnT2 = document.getElementById('btn-t2');
+    const btnT3 = document.getElementById('btn-t3');
+    const btnShoot = document.getElementById('btn-shoot');
+    
+    if(btnT1) btnT1.addEventListener('click', () => trocarPista(1));
+    if(btnT2) btnT2.addEventListener('click', () => trocarPista(2));
+    if(btnT3) btnT3.addEventListener('click', () => trocarPista(3));
+    
+    if(btnShoot) {
+        btnShoot.addEventListener('touchstart', (e) => { e.preventDefault(); atirarDoJogador(); });
+        btnShoot.addEventListener('mousedown', (e) => { atirarDoJogador(); });
+    }
+    
     // Ajustar renderizador quando a janela é redimensionada
     window.addEventListener('resize', () => {
         renderizador.setSize(window.innerWidth, window.innerHeight);
