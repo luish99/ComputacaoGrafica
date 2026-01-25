@@ -774,49 +774,11 @@ function aplicarDeslizamento(posicaoAtual, posicaoDesejada, resultadoColisao, ve
     // Componente paralela (Deslizamento)
     const slide = velVetor.clone().sub(impacto);
     
-    // A nova velocidade (magnitude) será reduzida pelo atrito da parede
-    // Atrito depende do ângulo.
-    // Se o ângulo de incidência for agudo (rasante), preservamos quase tudo.
-    // Se for perpendicular, perdemos quase tudo.
-    
-    // Angulo de incidência: 0 = perpendicular, 90 = paralelo.
-    // dot product (v . n) = |v|*|n|*cos(theta). Theta é angulo entre v e n.
-    // Se theta ~ 180 (oposto), colisão frontal.
-    // Se theta ~ 90 (perpendicular), colisão rasante.
-    
-    // Vamos usar a magnitude do 'slide' vs magnitude original 'velVetor'
-    // Slide já contém a projeção geométrica correta (v * sen(theta)).
-    
-    // Ajuste de Atrito Dinâmico:
-    // Paredes não são gelo. Adicionamos fricção base constante + fricção por pressão.
-    
-    // REDUZIR atrito significativamente para permitir deslizar
-    // Antes era 0.98, vamos tentar 1.0 (sem perda extra além da geometria) para testar o "colar e andar"
+
     const baseFriction = 1.0; 
     slide.multiplyScalar(baseFriction);
 
-    // CRÍTICO: Recalcular a velocidade escalar baseada na nova direção
-    // Se o vetor slide é pequeno, a velocidade escalar deve cair.
-    // Se é grande (paralelo), mantém.
     
-    // A direção do carro (frente) não muda instantaneamente na física simples, 
-    // mas a velocidade 'userData.velocidade' é escalar e move o carro na direção que ele APONTA.
-    
-    // Isso é um problema: O carro aponta para a parede, mas move p/ lado?
-    // Se movemos p/ lado, estamos 'drifting' ou o carro deve girar?
-    // Neste modelo simples, o carro continua apontando para a parede até o jogador virar.
-    // Portanto, a 'velocidade' que o controla (frente) deve ser reduzida para impedir que ele
-    // continue tentando entrar na parede com força total.
-    
-    // Modificando a lógica de redução de velocidade para ser GRADATIVA.
-    // Usar a projeção geométrica direta (projFwd) causa perda exponencial de velocidade a cada frame
-    // se o carro continuar apontando para a parede (o que ocorre se o jogador não virar).
-    
-    // Calcula o quão "de frente" foi a colisão.
-    // dot é v . n. 
-    // ratio = dot / velocidade. 
-    // Se ratio ~ 0 (Paralelo/Rasante) -> Perda Mínima.
-    // Se ratio ~ -1 (Perpendicular/Frontal) -> Perda Máxima.
     
     const ratio = (velocidade > 0.001) ? (dot / velocidade) : 0;
     
@@ -824,18 +786,7 @@ function aplicarDeslizamento(posicaoAtual, posicaoDesejada, resultadoColisao, ve
     // 0 = Rasante, 1 = Frontal
     const impactFactor = Math.min(1.0, Math.abs(ratio));
     
-    // Definir perda de velocidade baseada no ângulo
-    // Se frontal (1.0), queremos parar rápido (mas não travar instantly se for glacing).
-    // O usuário pede: "Se 90 graus (frontal no código dele 180?), redução maior. Se 180 (frontal?), sem movimento."
-    // Interpretando:
-    // Paralelo (impactFactor 0) -> Velocidade mantém (ou quase).
-    // 45 graus (impactFactor 0.707) -> Velocidade reduz "gradativamente", não instantaneamente para 4km/h.
-    // Frontal (impactFactor 1) -> Stop.
-
-    // Drag Coeff por frame.
-    // Se impactFactor = 0, drag = 0.
-    // Se impactFactor = 0.7, drag = baixo (ex: 0.05 ou 5% por frame).
-    // Se impactFactor = 1.0, drag = alto (ex: 1.0 ou 100% instantaneo).
+    
     
     let drag = 0;
     if (impactFactor < 0.2) {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let modoCamera = 0; // 0 = aérea, 1 = terceira pessoa
+let modoCamera = 1; // 0 = aérea, 1 = terceira pessoa (Inicializado em 1 para Mobile)
 let carro = null;
 let orbitControls = null;
 
@@ -15,8 +15,8 @@ export function criarCamera() {
         1000
     );
     
-    // Posição inicial (câmera aérea)
-    camera.position.set(0, 120, -100);
+    // Posição inicial (camera começa configurada, se move no loop)
+    camera.position.set(0, 20, -30);
     camera.lookAt(0, 0, 0);
     
     // Listener para trocar modo de câmera
