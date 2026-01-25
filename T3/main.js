@@ -5,6 +5,49 @@ import { criarCamera, atualizarCamera, definirCarro as definirCarroCamera, inici
 import { aplicarFisica, inicializarControles, definirCarro, definirPista, definirColisores, definirLinhaChegada, definirCheckpoints, definirAdversarios, definirWaypoints, definirCena, atirarDoJogador, definirBuracoERampas, configurarAudioTiro } from './Fisica.js';
 
 function principal() {
+    // --- GERENCIADOR DE CARREGAMENTO (LOADING SCREEN) ---
+    const loadingScreen = document.getElementById('loading-screen');
+    const progressBar = document.getElementById('progress-bar');
+    const loadingText = document.getElementById('loading-text');
+    const startButton = document.getElementById('start-button');
+    
+    // Configurar o DefaultLoadingManager global
+    THREE.DefaultLoadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+        const percent = (itemsLoaded / itemsTotal) * 100;
+        progressBar.style.width = percent + '%';
+        
+        // Extrair nome do arquivo para mostrar
+        const fileName = url.split('/').pop().split('?')[0]; 
+        loadingText.innerText = `Carregando: ${fileName} (${itemsLoaded}/${itemsTotal})`;
+    };
+
+    THREE.DefaultLoadingManager.onLoad = function () {
+        progressBar.style.width = '100%';
+        loadingText.innerText = 'Carregamento Completo!';
+        startButton.style.display = 'block'; // Mostrar botão START
+    };
+
+    THREE.DefaultLoadingManager.onError = function (url) {
+        console.error('Houve um erro ao carregar ' + url);
+        loadingText.innerText = 'Erro ao carregar recurso. Veja o console.';
+        loadingText.style.color = 'red';
+    };
+
+    // Lógica do Botão START
+    let gameStarted = false;
+    startButton.addEventListener('click', () => {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.transition = 'opacity 1s';
+        
+        // Tentar iniciar áudio (contexto de áudio precisa de interação do usuário)
+        // A função playStartSound será chamada na lógica das pistas
+        
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+            gameStarted = true;
+        }, 1000);
+    });
+
     // Configuração da cena
     const cena = new THREE.Scene();
 
@@ -416,6 +459,12 @@ function principal() {
     // Loop de renderização
     function animar() {
         requestAnimationFrame(animar);
+
+        // Bloquear lógica se ainda não deu Start
+        if (!gameStarted) {
+            renderizador.render(cena, camera);
+            return;
+        }
         
         // Atualizar FPS
         const currentTime = performance.now();

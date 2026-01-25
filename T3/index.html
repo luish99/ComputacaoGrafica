@@ -2,13 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Simulador de Corrida - T1</title>
+  <title>Simulador de Corrida - T3</title>
   <style>
     body { 
       margin: 0; 
       overflow: hidden; 
       background-color: #000; 
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     #info {
       position: absolute;
@@ -20,6 +20,9 @@
       border-radius: 8px;
       font-size: 14px;
       line-height: 1.6;
+      pointer-events: none;
+      user-select: none;
+      z-index: 10;
     }
     #instructions {
       position: absolute;
@@ -31,14 +34,116 @@
       border-radius: 8px;
       font-size: 12px;
       line-height: 1.6;
+      pointer-events: none;
+      user-select: none;
+      z-index: 10;
     }
     #instructions h3 {
       margin: 0 0 8px 0;
       font-size: 14px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #555;
+      padding-bottom: 5px;
+    }
+    
+    /* Loading Screen Styles */
+    #loading-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #111;
+        background-image: url('../assets/textures/skybox/panorama1.jpg'); /* Thematic Background */
+        background-size: cover;
+        background-position: center;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+    }
+    
+    #loading-container {
+        background-color: rgba(0, 0, 0, 0.85);
+        padding: 40px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        border: 2px solid #444;
+        max-width: 400px;
+        width: 80%;
+    }
+    
+    h1 {
+        margin: 0 0 20px 0;
+        font-size: 28px;
+        color: #ddd;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    
+    #progress-container {
+        width: 100%;
+        height: 20px;
+        background-color: #333;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 20px 0;
+        border: 1px solid #555;
+    }
+    
+    #progress-bar {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #ff3333, #ff8800);
+        transition: width 0.2s;
+    }
+    
+    #loading-text {
+        font-size: 14px;
+        color: #aaa;
+        margin-bottom: 20px;
+        min-height: 20px;
+    }
+    
+    #start-button {
+        padding: 15px 40px;
+        font-size: 20px;
+        font-weight: bold;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: none; /* Initially hidden */
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+    
+    #start-button:hover {
+        background-color: #218838;
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
     }
   </style>
 </head>
 <body>
+  
+  <div id="loading-screen">
+      <div id="loading-container">
+          <h1>Simulador T3</h1>
+          <div id="progress-container">
+              <div id="progress-bar"></div>
+          </div>
+          <div id="loading-text">Carregando assets...</div>
+          <button id="start-button">START ENGINE</button>
+      </div>
+  </div>
+
   <div id="info">
     Velocidade: 0 km/h<br>
     Câmera: Aérea
