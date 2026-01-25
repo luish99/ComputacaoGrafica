@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computação Gráfica - T3</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #111;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('assets/textures/skybox/panorama1.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        .container {
+            background-color: rgba(0,0,0,0.8);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #444;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        h1 { margin-bottom: 30px; letter-spacing: 2px; }
+        .btn {
+            display: block;
+            width: 200px;
+            padding: 15px;
+            margin: 15px auto;
+            background-color: #007acc;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 18px;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            background-color: #0062a3;
+        }
+        .btn.mobile { background-color: #28a745; }
+        .btn.mobile:hover { background-color: #218838; }
+        p { color: #aaa; margin-top: 30px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Trabalho 3 - Corrida</h1>
+        <a href="T3/index.html" class="btn">Versão Desktop</a>
+        <a href="T3_Mobile/index.html" class="btn mobile">Versão Mobile</a>
+        <p>Desenvolvido para Computação Gráfica</p>
+    </div>
+</body>
+</html>
