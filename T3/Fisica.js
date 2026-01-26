@@ -809,9 +809,7 @@ function aplicarDeslizamento(posicaoAtual, posicaoDesejada, resultadoColisao, ve
     // Atualizar velocidade no objeto
     objeto.userData.velocidade = Math.max(0, novaVelocidade);
     
-    // CORREÇÃO DE POSIÇÃO (Push out)
-    // O usuário solicitou explicitamente ZERO EMPURRÃO.
-    // O carro deve "colar". 
+    
     // Como estamos usando pontoSeguro = posicaoAtual, e slide é tangente, o carro permanece na tangente.
     const pushOut = new THREE.Vector3(0,0,0); 
     

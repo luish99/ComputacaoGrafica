@@ -9,8 +9,8 @@ const textureLoader = new THREE.TextureLoader();
 const texPlayer = textureLoader.load('assets%20baixados/camuflagem%20azul.png');
 texPlayer.wrapS = THREE.RepeatWrapping;
 texPlayer.wrapT = THREE.RepeatWrapping;
-// Padrão ainda maior (menos repetição) e mantendo proporção 1:2
-texPlayer.repeat.set(0.5, 1.0); 
+// Padrão muito maior (zoom na textura para nitidez do desenho)
+texPlayer.repeat.set(0.1, 0.1); 
 texPlayer.anisotropy = 16; 
 
 // Texturas dos Adversários (Camuflagens Vermelha, Verde, Roxa)
@@ -25,7 +25,7 @@ const texAdversarios = [
 texAdversarios.forEach(tex => {
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(0.5, 1.0); // Padrão 2x maior que o anterior
+    tex.repeat.set(0.1, 0.1); // Padrão ampliado para visibilidade
     tex.anisotropy = 16;
 });
 
