@@ -32,7 +32,7 @@ scene.add(plane);
 const rede = new MultiplayerEngine();
 const serverUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:3000'
-  : 'https://tcc-servidor.onrender.com';
+  : 'https://computacaografica-3uzi.onrender.com';
 
 const jogadorEsferas = new Map();
 let meuId = null;

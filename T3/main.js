@@ -172,10 +172,9 @@ function principal() {
         }
 
         // Determina a URL do servidor automaticamente (Local ou Produção)
-        // Lembre-se de alterar a URL do Render abaixo para a que você gerar no passo 3!
         const serverUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:3000'
-            : 'https://tcc-servidor.onrender.com'; // <--- INSIRA O LINK DO SEU RENDER AQUI DEPOIS
+            : 'https://computacaografica-3uzi.onrender.com';
 
         const sucesso = rede.connect(serverUrl);
         if (!sucesso) {
