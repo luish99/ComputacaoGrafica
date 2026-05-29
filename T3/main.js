@@ -55,6 +55,9 @@ function principal() {
         setTimeout(() => {
             loadingScreen.style.display = 'none';
             gameStarted = true;
+            shouldPlayMusic = true;
+            playStartSound();
+            updateMusic();
         }, 800);
     }
 
@@ -395,17 +398,13 @@ function principal() {
     // Yes, `0_assets_T3` is at root. `T3` is at root. 
     // Wait. `c:\Users\luish\CG\T3` and `c:\Users\luish\CG\0_assets_T3`.
     let isMusicEnabled = true;
+    let shouldPlayMusic = false;
     let lastStartSound = 2; // Start with 1 next
     let lastLapTriggered = false;
 
-    audioLoader.load('../0_assets_T3/start01.mp3', (buffer) => { 
-        soundStart1.setBuffer(buffer); 
+    audioLoader.load('../0_assets_T3/start01.mp3', (buffer) => {
+        soundStart1.setBuffer(buffer);
         soundStart1.setVolume(0.5);
-        // Tentar tocar ao iniciar (primeiro som)
-        if (lastStartSound === 2) {
-             soundStart1.play();
-             lastStartSound = 1; 
-        }
     });
     audioLoader.load('../0_assets_T3/start02.mp3', (buffer) => { soundStart2.setBuffer(buffer); soundStart2.setVolume(0.5); });
     audioLoader.load('../0_assets_T3/lastLap.mp3', (buffer) => { soundLastLap.setBuffer(buffer); soundLastLap.setVolume(0.7); });
@@ -420,8 +419,8 @@ function principal() {
             const volume = (index === 2) ? 0.8 : 0.5;
             musicTracks[index].setVolume(volume);
 
-            // Auto-play if ready and is current track
-            if (index === (pistaAtual - 1) && isMusicEnabled) {
+            // Auto-play apenas quando o jogo inicia
+            if (shouldPlayMusic && index === (pistaAtual - 1) && isMusicEnabled) {
                 musicTracks[index].play();
             }
         });
