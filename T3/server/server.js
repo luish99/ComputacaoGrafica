@@ -141,6 +141,10 @@ io.on('connection', (socket) => {
       tryStartSession();
     } else {
       io.emit('jogadorDesconectado', socket.id);
+      if (Object.keys(entities).length === 0) {
+        sessionStarted = false;
+        publishRoom();
+      }
     }
   });
 });
