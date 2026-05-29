@@ -2,14 +2,272 @@ import * as THREE from 'three';
 import { criarPista1, criarPista2, criarPista3, obterTexturasAnimadas, atualizarEfeitosPista } from './Pista.js';
 import { criarCarro, criarCarroAdversario } from './Carro.js';
 import { criarCamera, atualizarCamera, definirCarro as definirCarroCamera, inicializarOrbitControls } from './CameraController.js';
-import { aplicarFisica, inicializarControles, definirCarro, definirPista, definirColisores, definirLinhaChegada, definirCheckpoints, definirAdversarios, definirWaypoints, definirCena, atirarDoJogador, definirBuracoERampas, configurarAudioTiro } from './Fisica.js';
+import { aplicarFisica, inicializarControles, definirCarro, definirPista, definirColisores, definirLinhaChegada, definirCheckpoints, definirAdversarios, definirJogadoresRemotos, definirWaypoints, definirCena, atirarDoJogador, definirBuracoERampas, configurarAudioTiro } from './Fisica.js';
 
 function principal() {
     // --- GERENCIADOR DE CARREGAMENTO (LOADING SCREEN) ---
     const loadingScreen = document.getElementById('loading-screen');
     const progressBar = document.getElementById('progress-bar');
     const loadingText = document.getElementById('loading-text');
-    const startButton = document.getElementById('start-button');
+    const menuPanel = document.getElementById('menu-panel');
+    const lobbyPanel = document.getElementById('lobby-panel');
+    const singlePlayerButton = document.getElementById('single-player-button');
+    const multiplayerButton = document.getElementById('multiplayer-button');
+    const readyButton = document.getElementById('ready-button');
+    const lobbyStatus = document.getElementById('lobby-status');
+    const lobbyPlayers = document.getElementById('lobby-players');
+    const lobbyMessage = document.getElementById('lobby-message');
+
+    let gameStarted = false;
+    let gameMode = null;
+    let multiplayerReady = false;
+    let multiplayerStarted = false;
+    let multiplayerConectado = false;
+    let meuId = null;
+    let meuSlotIndex = 0;
+    const rede = new MultiplayerEngine();
+    const jogadoresRemotos = {};
+    const coresRemotas = [0x00ffff, 0xff66ff, 0xffff66, 0xff9966];
+
+    function exibirMenuPrincipal() {
+        menuPanel.classList.add('visible');
+        lobbyPanel.style.display = 'none';
+        lobbyMessage.innerText = '';
+        lobbyStatus.innerText = 'Escolha um modo de jogo.';
+    }
+
+    function ocultarMenuPrincipal() {
+        menuPanel.classList.remove('visible');
+    }
+
+    function exibirLobbyMultiplayer() {
+        menuPanel.classList.remove('visible');
+        lobbyPanel.style.display = 'block';
+        lobbyMessage.innerText = 'Conectando ao servidor...';
+        lobbyStatus.innerText = 'Aguardando conexão...';
+        readyButton.disabled = true;
+        readyButton.innerText = 'Ready';
+    }
+
+    function encerrarOverlayEIniciarJogo() {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.transition = 'opacity 0.8s';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+            gameStarted = true;
+        }, 800);
+    }
+
+    function atualizarListaLobby(sala) {
+        if (!sala || !Array.isArray(sala.jogadores)) {
+            lobbyPlayers.innerHTML = '';
+            return;
+        }
+
+        lobbyPlayers.innerHTML = '';
+        sala.jogadores.forEach((jogador, index) => {
+            const linha = document.createElement('div');
+            linha.className = 'lobby-player';
+            const nome = jogador.id === meuId ? 'Você' : `Jogador ${index + 1}`;
+            const status = jogador.ready ? '<span class="lobby-ready">Ready</span>' : '<span class="lobby-not-ready">Aguardando</span>';
+            linha.innerHTML = `<span>${nome} #${jogador.slotIndex + 1}</span>${status}`;
+            lobbyPlayers.appendChild(linha);
+        });
+
+        const prontos = sala.jogadores.filter((jogador) => jogador.ready).length;
+        lobbyStatus.innerText = sala.partidaIniciada
+            ? 'A partida está começando...'
+            : `Prontos: ${prontos}/${sala.jogadores.length}`;
+    }
+
+    function atualizarBotsVisiveis(ativos) {
+        if (typeof adversarios === 'undefined') {
+            return;
+        }
+
+        adversarios.forEach((bot) => {
+            bot.visible = ativos;
+        });
+
+        atualizarFisicaAdversarios();
+    }
+
+    function atualizarFisicaAdversarios() {
+        if (gameMode === 'multiplayer') {
+            definirAdversarios([]); // Sem Inteligencia artificial
+            const remotosAtivos = Object.values(jogadoresRemotos);
+            definirJogadoresRemotos(remotosAtivos);
+        } else {
+            definirAdversarios(adversarios); // Em single player manda os bots
+            definirJogadoresRemotos([]); 
+        }
+    }
+
+    function obterSpawnMultiplayer(slotIndex) {
+        const spawns = [
+            { x: 158, y: 0.5, z: -40, angulo: Math.PI },
+            { x: 142, y: 0.5, z: -20, angulo: Math.PI },
+            { x: 158, y: 0.5, z: -20, angulo: Math.PI },
+            { x: 142, y: 0.5, z: -40, angulo: Math.PI }
+        ];
+
+        return spawns[slotIndex % spawns.length];
+    }
+
+    function posicionarCarroMultiplayer(alvo, slotIndex) {
+        if (!alvo) {
+            return;
+        }
+
+        const spawn = obterSpawnMultiplayer(slotIndex);
+        alvo.position.set(spawn.x, spawn.y, spawn.z);
+        alvo.rotation.y = spawn.angulo;
+        alvo.userData.angulo = spawn.angulo;
+        alvo.userData.velocidade = 0;
+        alvo.userData.anguloRodas = 0;
+    }
+
+    function criarJogadorRemoto(jogadorInfo) {
+        if (!jogadorInfo || jogadorInfo.id === meuId) {
+            return;
+        }
+
+        let carroRemoto = jogadoresRemotos[jogadorInfo.id];
+        if (!carroRemoto) {
+            const corPrincipal = jogadorInfo.color ?? coresRemotas[jogadorInfo.slotIndex % coresRemotas.length];
+            carroRemoto = criarCarroAdversario(cena, corPrincipal, 0xffffff, jogadorInfo.slotIndex ?? 0);
+            carroRemoto.userData.isRemoto = true;
+            jogadoresRemotos[jogadorInfo.id] = carroRemoto;
+            cena.add(carroRemoto);
+            atualizarFisicaAdversarios();
+        }
+
+        if (typeof jogadorInfo.slotIndex === 'number') {
+            posicionarCarroMultiplayer(carroRemoto, jogadorInfo.slotIndex);
+        }
+
+        if (jogadorInfo.position) {
+            carroRemoto.position.set(jogadorInfo.position.x, jogadorInfo.position.y, jogadorInfo.position.z);
+        }
+
+        if (jogadorInfo.rotation) {
+            carroRemoto.quaternion.set(jogadorInfo.rotation.x, jogadorInfo.rotation.y, jogadorInfo.rotation.z, jogadorInfo.rotation.w);
+        }
+    }
+
+    function removerJogadorRemoto(id) {
+        if (jogadoresRemotos[id]) {
+            cena.remove(jogadoresRemotos[id]);
+            delete jogadoresRemotos[id];
+            atualizarFisicaAdversarios();
+        }
+    }
+
+    function conectarMultiplayer() {
+        if (rede.connected) {
+            return;
+        }
+
+        // Determina a URL do servidor automaticamente (Local ou Produção)
+        // Lembre-se de alterar a URL do Render abaixo para a que você gerar no passo 3!
+        const serverUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:3000'
+            : 'https://tcc-servidor.onrender.com'; // <--- INSIRA O LINK DO SEU RENDER AQUI DEPOIS
+
+        const sucesso = rede.connect(serverUrl);
+        if (!sucesso) {
+            lobbyMessage.innerText = 'Socket.io não carregou. Verifique o servidor.';
+            return;
+        }
+
+        rede.on('connected', () => {
+            multiplayerConectado = true;
+            lobbyMessage.innerText = 'Conectado. Marque ready para aguardar a sala.';
+            readyButton.disabled = false;
+        });
+
+        rede.on('sessionAssigned', (sessao) => {
+            meuId = sessao.id;
+            meuSlotIndex = sessao.slotIndex;
+            multiplayerStarted = Boolean(sessao.partidaIniciada);
+        });
+
+        rede.on('lobbyUpdated', (sala) => {
+            atualizarListaLobby(sala);
+            multiplayerStarted = Boolean(sala.partidaIniciada);
+
+            if (sala.partidaIniciada) {
+                iniciarPartidaMultiplayer(sala);
+            }
+        });
+
+        rede.on('gameStarted', (dados) => {
+            multiplayerStarted = true;
+            iniciarPartidaMultiplayer(dados);
+        });
+
+        rede.on('entityDisconnected', (id) => {
+            removerJogadorRemoto(id);
+        });
+
+        rede.on('entityMoved', (jogadorInfo) => {
+            if (jogadoresRemotos[jogadorInfo.id] && jogadorInfo.position) {
+                const nav = jogadoresRemotos[jogadorInfo.id];
+                nav.position.set(jogadorInfo.position.x, jogadorInfo.position.y, jogadorInfo.position.z);
+                if (jogadorInfo.rotation) {
+                    nav.quaternion.set(jogadorInfo.rotation.x, jogadorInfo.rotation.y, jogadorInfo.rotation.z, jogadorInfo.rotation.w);
+                }
+            }
+        });
+
+        rede.on('error', (msg) => {
+            lobbyMessage.innerText = msg;
+            readyButton.disabled = true;
+        });
+    }
+
+    function iniciarPartidaMultiplayer(dadosSala) {
+        if (gameStarted) {
+            return;
+        }
+
+        multiplayerStarted = true;
+        ocultarMenuPrincipal();
+
+        const jogadoresSala = Array.isArray(dadosSala?.jogadores) ? dadosSala.jogadores : [];
+        jogadoresSala.forEach((jogador) => {
+            if (jogador.id === meuId) {
+                posicionarCarroMultiplayer(carro, jogador.slotIndex);
+            } else {
+                criarJogadorRemoto(jogador);
+            }
+        });
+
+        atualizarBotsVisiveis(false);
+        encerrarOverlayEIniciarJogo();
+    }
+
+    function iniciarSinglePlayer() {
+        gameMode = 'single';
+        multiplayerReady = false;
+        multiplayerStarted = false;
+        multiplayerConectado = false;
+        ocultarMenuPrincipal();
+        atualizarBotsVisiveis(true);
+        definirAdversarios(adversarios);
+        posicionarEntidades(pistaAtual);
+        encerrarOverlayEIniciarJogo();
+    }
+
+    function iniciarMultiplayer() {
+        gameMode = 'multiplayer';
+        multiplayerReady = false;
+        multiplayerStarted = false;
+        multiplayerConectado = false;
+        atualizarBotsVisiveis(false);
+        exibirLobbyMultiplayer();
+        conectarMultiplayer();
+    }
     
     // Configurar o DefaultLoadingManager global
     THREE.DefaultLoadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
@@ -23,8 +281,8 @@ function principal() {
 
     THREE.DefaultLoadingManager.onLoad = function () {
         progressBar.style.width = '100%';
-        loadingText.innerText = 'Carregamento Completo!';
-        startButton.style.display = 'block'; // Mostrar botão START
+        loadingText.innerText = 'Carregamento Completo! Escolha um modo.';
+        exibirMenuPrincipal();
     };
 
     THREE.DefaultLoadingManager.onError = function (url) {
@@ -33,19 +291,18 @@ function principal() {
         loadingText.style.color = 'red';
     };
 
-    // Lógica do Botão START
-    let gameStarted = false;
-    startButton.addEventListener('click', () => {
-        loadingScreen.style.opacity = '0';
-        loadingScreen.style.transition = 'opacity 1s';
-        
-        // Tentar iniciar áudio (contexto de áudio precisa de interação do usuário)
-        // A função playStartSound será chamada na lógica das pistas
-        
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-            gameStarted = true;
-        }, 1000);
+    singlePlayerButton.addEventListener('click', iniciarSinglePlayer);
+    multiplayerButton.addEventListener('click', iniciarMultiplayer);
+    readyButton.addEventListener('click', () => {
+        if (!rede.connected || !multiplayerConectado) {
+            lobbyMessage.innerText = 'Ainda não conectado ao servidor.';
+            return;
+        }
+
+        multiplayerReady = !multiplayerReady;
+        readyButton.innerText = multiplayerReady ? 'Unready' : 'Ready';
+        rede.setReadyState(multiplayerReady);
+        lobbyMessage.innerText = multiplayerReady ? 'Pronto. Aguardando os outros jogadores.' : 'Você está aguardando novamente.';
     });
 
     // Configuração da cena
@@ -257,6 +514,8 @@ function principal() {
     // Criar carro do JOGADOR
     const carro = criarCarro(cena);
     
+    // Multiplayer é gerenciado pelo menu inicial e lobby.
+    
     // Cores e Nomes dos Adversários (Cores mais vivas para destacar a textura)
     const configsAdversarios = [
         { nome: 'Vermelho Veloz', principal: 0xff4444, detalhe: 0xff0000 }, // Vermelho Vivo + Detalhe Vermelho (antes branco)
@@ -295,24 +554,16 @@ function principal() {
     window.modoCameraAtual = 'Aérea';
 
     // Função auxiliar para posicionar
+    // Geração de offset aleatório por jogador para evitar sobreposição total
+    const randomSpawnOffset = (Math.random() - 0.5) * 12; // Valor entre -6 e 6
+
     function posicionarEntidades(pistaNum) {
         if (!carro) return;
         
         // Posições baseadas na pista
         if (pistaNum === 1 || pistaNum === 2) {
             // Player - Linha de Trás (Grid 2x2)
-            // Direção do Carro: +Z (angulo = PI)
-            // Frente do Grid: Z = -20 (Mais longe do inicio? Mais perto do fim)
-            // Aparentemente a pista corre para +Z, então Z maior é mais na frente.
-            // Se corre para +Z: 40 > 20. Então 40 seria frente.
-            // Mas o player disse "Player largando na frente" quando estava em -20.
-            // E outros em -40.
-            // Se -20 é frente, e -40 é fundo.
-            // Então Z cresce.
-            // Para player ficar atrás, deve ir para -40.
-            
-            // Player: Trás Direita (Linha de Fundo)
-            carro.position.set(158, 0.5, -40);
+            carro.position.set(158 + randomSpawnOffset, 0.5, -40 + randomSpawnOffset);
             carro.userData.angulo = Math.PI; 
             
             // GRID DA FRENTE (-20)
@@ -330,13 +581,8 @@ function principal() {
             adversarios[2].userData.angulo = Math.PI;
             
         } else if (pistaNum === 3) {
-             // Direção do Carro: +X (angulo = -PI/2 -> Direção (1,0,0))
-             // Se player em -80 estava na frente, e outros em -100 atrás.
-             // Entao X maior = frente. (-80 > -100).
-             // Player deve ir para trás -> -100.
-             
              // Player: Trás Direita
-             carro.position.set(-100, 0.5, -153);
+             carro.position.set(-100 + randomSpawnOffset, 0.5, -153 + randomSpawnOffset);
              carro.userData.angulo = -Math.PI / 2; // Facing -X
 
              // GRID DA FRENTE (-80)
@@ -433,6 +679,12 @@ function principal() {
         lastLapTriggered = false;
     }
     
+    // Atualização imediata de rede ao concluir conectividade, para garantir q o outro cliente
+    // saiba do nosso ponto de respawn antes mesmo de darmos start (evita nascer no meio do mapa(0,0,0)).
+    rede.on('connected', () => {
+         rede.sendTransform(carro.position, carro.quaternion);
+    });
+
     // Adicionar listener para teclas 1, 2 e 3 e Espaço (Tiro)
     window.addEventListener('keydown', (evento) => {
         if (evento.key === '1') {
@@ -512,6 +764,11 @@ function principal() {
                     tex.offset.x = (tex.offset.x + 0.002) % 1;
                     tex.offset.y = (tex.offset.y + 0.001) % 1;
                 });
+            }
+
+            // Enviar posição do jogador para o Servidor Multiplayer usando a Engine desacoplada
+            if (rede.connected && gameStarted) {
+                rede.sendTransform(carro.position, carro.quaternion);
             }
         }
         

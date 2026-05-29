@@ -308,7 +308,7 @@ export function criarCarroAdversario(cena, corPrincipal = 0x000088, corDetalhe =
     
     // Body: Standard Material para melhor visualização da textura + cor (Branco para não tingir)
     const mainMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xffffff, map: texSelecionada, roughness: 0.5, metalness: 0
+        color: corPrincipal, map: texSelecionada, roughness: 0.5, metalness: 0
     });
     // Material exclusivo para cabine (adversário)
     const cabinMaterial = new THREE.MeshStandardMaterial({ 

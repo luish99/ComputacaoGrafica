@@ -29,6 +29,7 @@ const TOTAL_VOLTAS = 4;
 
 // Variáveis do Adversário e Combate
 let adversarios = [];
+let jogadoresRemotosFisica = []; // Array exclusivo para jogadores da rede
 let waypoints = [];
 let tiros = [];
 let cenaRef = null;
@@ -131,6 +132,10 @@ export function definirAdversarios(advArray) {
             adv.userData.isAdversario = true;
         }
     }); 
+}
+
+export function definirJogadoresRemotos(remotoArray) {
+    jogadoresRemotosFisica = remotoArray;
 }
 // Manter compatibilidade caso exista código antigo chamando definirAdversario
 export function definirAdversario(advObj) {
@@ -406,8 +411,11 @@ export function aplicarFisica() {
     
     carro.rotation.y = carro.userData.angulo;
     
-    // Verificar colisão Carro vs Adversários
-    for (const adv of adversarios) {
+    // Juntar bots e jogadores conectados em uma única lista temporaria
+    const todosInimigos = [...adversarios, ...jogadoresRemotosFisica];
+    
+    // Verificar colisão Carro vs Adversários (ou Remotos)
+    for (const adv of todosInimigos) {
         if (verificarColisaoCarroCarro(carro, adv)) {
             // Empurrar para longe (Minimum Translation)
             const vecAfastamento = carro.position.clone().sub(adv.position);
@@ -425,8 +433,10 @@ export function aplicarFisica() {
             adv.position.add(vecAfastamento.clone().multiplyScalar(-forcaRepulsao));
             
             // Troca elastica de momento (simples)
-            const tempVel = carro.userData.velocidade;
-            carro.userData.velocidade = adv.userData.velocidade * 0.8; // Perda de energia
+            const tempVel = carro.userData.velocidade || 0;
+            const advVel = adv.userData.velocidade || 0; // fallback se for multiplayer remoto (nao tem vel)
+
+            carro.userData.velocidade = advVel * 0.8; // Perda de energia
             adv.userData.velocidade = tempVel * 0.8;
             
             // Se estiverem muito lentos, separar com força mínima
@@ -435,11 +445,11 @@ export function aplicarFisica() {
         }
     }
 
-    // Verificar colisão Adversário vs Adversário
-    for (let i = 0; i < adversarios.length; i++) {
-        for (let j = i + 1; j < adversarios.length; j++) {
-            const adv1 = adversarios[i];
-            const adv2 = adversarios[j];
+    // Verificar colisão de Inimigo vs Inimigo
+    for (let i = 0; i < todosInimigos.length; i++) {
+        for (let j = i + 1; j < todosInimigos.length; j++) {
+            const adv1 = todosInimigos[i];
+            const adv2 = todosInimigos[j];
         
              if (verificarColisaoCarroCarro(adv1, adv2)) {
                 const vecAfastamento = adv1.position.clone().sub(adv2.position);
@@ -452,9 +462,10 @@ export function aplicarFisica() {
                 adv2.position.add(vecAfastamento.clone().multiplyScalar(-forcaRepulsao));
                 
                 // Troca de velocidade
-                const tempVel = adv1.userData.velocidade;
-                adv1.userData.velocidade = adv2.userData.velocidade * 0.8;
-                adv2.userData.velocidade = tempVel * 0.8;
+                const vel1 = adv1.userData.velocidade || 0;
+                const vel2 = adv2.userData.velocidade || 0;
+                adv1.userData.velocidade = vel2 * 0.8;
+                adv2.userData.velocidade = vel1 * 0.8;
              }
         }
     }
@@ -603,9 +614,9 @@ function verificarColisao(posicao, angulo, objeto = carro) {
     }
 
     // Margem extra no HITBOX do carro (OBB) para colidir ANTES de tocar visualmente
-    const margin = 0.2; 
-    const halfW = 3.0 + margin;
-    const halfL = 5.75 + margin;
+    const margin = 0.5; // Margem extra para detectar a colisão exatamente no tamanho do carro ou um pouco antes
+    const halfW = 3.0 + margin; // Largura exata (6.0/2) + margem
+    const halfL = 5.75 + margin; // Comprimento exato (11.5/2) + margem
 
     const cosA = Math.cos(angulo);
     const sinA = Math.sin(angulo);
@@ -1347,7 +1358,9 @@ function atualizarTiros() {
         // Colisão com Carros
         let atingiu = false;
         
-        // 1. Tiro acerta o Jogador?
+        const todosInimigosTiro = [...adversarios, ...jogadoresRemotosFisica]; // Combina AI e Jogadores reais
+
+        // 1. Tiro acerta o Jogador Local? (Para quando remote tira no local)
         if (tiro.dono !== 'jogador' && carro) {
             const dist = tiro.mesh.position.distanceTo(carro.position);
             if (dist < 4) { // Hitbox um pouco maior
@@ -1365,17 +1378,17 @@ function atualizarTiros() {
             }
         }
 
-        // 2. Tiro acerta algum adversário?
-        if (!atingiu && adversarios.length > 0) {
-            for (const adv of adversarios) {
+        // 2. Tiro acerta algum adversário ou jogador remoto?
+        if (!atingiu && todosInimigosTiro.length > 0 && tiro.dono !== 'adversario') { // Tiro do Jogador acerta outros (TODO: remote id flag properly later)
+            for (const adv of todosInimigosTiro) {
                 // Verificar distância
                 const dist = tiro.mesh.position.distanceTo(adv.position);
                 if (dist < 4) {
                     atingiu = true;
-                    adv.userData.velocidade *= 0.3;
+                    if(adv.userData.velocidade !== undefined) adv.userData.velocidade *= 0.3; // Network cars might not natively have it, the server propagates it eventually, or we simulate visual hit
                     adv.userData.sobEfeitoDano = true;
                     adv.userData.tempoDano = Date.now();
-                    console.log('Adversário atingido!');
+                    console.log('Alvo atingido!');
                     
                     // Opcional: Tocar som de impacto também (mais baixo se longe?)
                     if (somImpacto && somImpacto.buffer) {
@@ -1400,9 +1413,9 @@ function verificarColisaoCarroCarro(c1, c2) {
     if (!c1 || !c2) return false;
     
     // Configuração das esferas (baseado no Carro.js: width=6, length=11.5)
-    // Usaremos 2 esferas de raio 3.0, separadas por 5.5 unidades
-    const raio = 2.8; // Ligeiramente menor que 3.0 para permitir contatos próximos
-    const offset = 2.5; // Do centro para frente/trás
+    // Usaremos 2 esferas para cobrir todo o carro.
+    const raio = 3.5; // Raio maior para coincidir com a largura real e evitar que entrem um no outro
+    const offset = 2.5; // Distância do centro para cobrir o comprimento de 11.5
     
     // Direção dos carros
     const getPosEsferas = (obj) => {
