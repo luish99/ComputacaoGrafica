@@ -14,6 +14,20 @@ const io = new Server(server, {
   }
 });
 
+app.post('/reset', (req, res) => {
+  sessionStarted = false;
+  Object.keys(entities).forEach((id) => {
+    delete entities[id];
+  });
+
+  for (const socket of io.sockets.sockets.values()) {
+    socket.disconnect(true);
+  }
+
+  publishRoom();
+  res.json({ ok: true, message: 'Sessao reiniciada.' });
+});
+
 const MAX_ENTITIES = 4;
 const entities = {};
 let sessionStarted = false;
@@ -44,7 +58,7 @@ function publishRoom() {
 
 function areAllReady() {
   const ids = Object.keys(entities);
-  return ids.length > 0 && ids.every((id) => entities[id].ready);
+  return ids.length >= 2 && ids.every((id) => entities[id].ready);
 }
 
 function tryStartSession() {
