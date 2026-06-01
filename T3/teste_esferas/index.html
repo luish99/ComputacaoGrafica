@@ -24,6 +24,32 @@
       line-height: 1.5;
       z-index: 10;
     }
+
+    #lobby-panel {
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    #lobby-players div {
+      font-size: 12px;
+      color: #cfd8e6;
+    }
+
+    #ready-button {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      background: #2f6bff;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #ready-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -31,6 +57,11 @@
     <div><strong>Teste Multiplayer - Esferas</strong></div>
     <div>Setas: mover esfera no plano XZ</div>
     <div id="status">Conectando...</div>
+    <div id="lobby-panel">
+      <div id="lobby-status">Aguardando jogadores...</div>
+      <div id="lobby-players"></div>
+      <button id="ready-button">Ready</button>
+    </div>
   </div>
 
   <script type="importmap">
@@ -42,7 +73,7 @@
   </script>
 
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-  <script src="../MultiplayerEngine.js?v=2026-05-29b"></script>
-  <script type="module" src="app.js?v=2026-05-29b"></script>
+  <script src="../MultiplayerEngine.js?v=2026-06-01"></script>
+  <script type="module" src="app.js?v=2026-06-01"></script>
 </body>
 </html>

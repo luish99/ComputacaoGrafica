@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 
 const statusEl = document.getElementById('status');
+const lobbyStatusEl = document.getElementById('lobby-status');
+const lobbyPlayersEl = document.getElementById('lobby-players');
+const readyButton = document.getElementById('ready-button');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b0f1a);
@@ -37,6 +40,7 @@ const serverUrl = (window.location.hostname === 'localhost' || window.location.h
 const jogadorEsferas = new Map();
 let meuId = null;
 let partidaIniciada = false;
+let readyState = false;
 
 const keys = {
   ArrowUp: false,
@@ -59,6 +63,28 @@ function atualizarStatus(msg) {
   statusEl.textContent = msg;
 }
 
+function atualizarLobby(sala) {
+  if (!sala || !Array.isArray(sala.jogadores)) {
+    lobbyPlayersEl.innerHTML = '';
+    lobbyStatusEl.textContent = 'Aguardando jogadores...';
+    return;
+  }
+
+  lobbyPlayersEl.innerHTML = '';
+  sala.jogadores.forEach((jogador, index) => {
+    const linha = document.createElement('div');
+    const nome = jogador.id === meuId ? 'Voce' : `Jogador ${index + 1}`;
+    const status = jogador.ready ? 'Ready' : 'Aguardando';
+    linha.textContent = `${nome} - ${status}`;
+    lobbyPlayersEl.appendChild(linha);
+  });
+
+  const prontos = sala.jogadores.filter((jogador) => jogador.ready).length;
+  lobbyStatusEl.textContent = sala.partidaIniciada
+    ? 'Sessao iniciada.'
+    : `Prontos: ${prontos}/${sala.jogadores.length}`;
+}
+
 function conectar() {
   const ok = rede.connect(serverUrl);
   if (!ok) {
@@ -67,8 +93,8 @@ function conectar() {
   }
 
   rede.on('connected', () => {
-    atualizarStatus('Conectado. Aguardando outro jogador...');
-    rede.setReadyState(true);
+    atualizarStatus('Conectado. Clique em Ready para iniciar.');
+    readyButton.disabled = false;
   });
 
   rede.on('sessionAssigned', (data) => {
@@ -79,6 +105,7 @@ function conectar() {
   });
 
   rede.on('lobbyUpdated', (data) => {
+    atualizarLobby(data);
     if (!partidaIniciada) {
       atualizarStatus(`Jogadores na sala: ${data.totalJogadores}/2. Aguardando prontidao...`);
     }
@@ -87,6 +114,7 @@ function conectar() {
   rede.on('gameStarted', (data) => {
     partidaIniciada = true;
     atualizarStatus('Partida iniciada. Use as setas para mover.');
+    readyButton.disabled = true;
 
     if (data?.jogadores) {
       data.jogadores.forEach((jogador) => {
@@ -120,8 +148,21 @@ function conectar() {
 
   rede.on('error', (msg) => {
     atualizarStatus(msg || 'Erro na conexao.');
+    readyButton.disabled = true;
   });
 }
+
+readyButton.addEventListener('click', () => {
+  if (!rede.connected) {
+    atualizarStatus('Ainda nao conectado ao servidor.');
+    return;
+  }
+
+  readyState = !readyState;
+  readyButton.textContent = readyState ? 'Unready' : 'Ready';
+  rede.setReadyState(readyState);
+  atualizarStatus(readyState ? 'Pronto. Aguardando os outros jogadores.' : 'Aguardando novamente.');
+});
 
 function atualizarMovimento() {
   const esfera = jogadorEsferas.get(meuId);
